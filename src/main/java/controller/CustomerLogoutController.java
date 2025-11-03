@@ -7,12 +7,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebServlet("/emp/empIndex")
-public class EmpIndexController extends HttpServlet {
+/**
+ * Servlet implementation class CustomerLogoutController
+ */
+@WebServlet("/customer/customerLogout")
+public class CustomerLogoutController extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 경로의 오타(empInex.jsp)를 empIndex.jsp로 수정했습니다.
-		request.getRequestDispatcher("/WEB-INF/view/emp/empIndex.jsp").forward(request, response);
+		request.getSession().invalidate();
+		response.sendRedirect(request.getContextPath()+"/home");
 	}
 
 }

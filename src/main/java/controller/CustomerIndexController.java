@@ -11,7 +11,7 @@ import java.io.IOException;
 public class CustomerIndexController extends HttpServlet {
 
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		request.getRequestDispatcher("WEB-INF/view/customer/customerInex.jsp").forward(request, response);
+		request.getRequestDispatcher("/WEB-INF/view/customer/customerIndex.jsp").forward(request, response);
 	}
 
 }
