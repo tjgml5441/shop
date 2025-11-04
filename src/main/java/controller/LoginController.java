@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession; 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import dao.CustomerDao; 
 import dao.EmpDao; 
@@ -48,7 +49,13 @@ public class LoginController extends HttpServlet {
             
 		} else if(customerOrEmpSel.equals("emp")) {
             EmpDao empDao = new EmpDao();
-            Emp loginEmp = empDao.login(id, password); 
+            Emp loginEmp = null;
+			try {
+				loginEmp = empDao.login(id, password);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
             
             if (loginEmp != null) {
                 session.setAttribute("loginEmp", loginEmp);
