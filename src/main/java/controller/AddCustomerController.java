@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.sql.SQLException;
 
 import dao.CustomerDao;
 import dto.Customer;
@@ -46,13 +47,18 @@ public class AddCustomerController extends HttpServlet {
         // 3. 이름, 전화번호 중복 검사 (아이디 중복확인 완료 후에만 실행)
         if (message.isEmpty()) {
             // 이름 중복 검사
-            if (customerDao.checkDuplicationNameOrPhone("name", name) != null) {
-                 message = "이미 사용 중인 이름입니다.";
-            } 
-            // 전화번호 중복 검사
-            else if (customerDao.checkDuplicationNameOrPhone("phone", phone) != null) {
-                 message = "이미 사용 중인 전화번호입니다.";
-            } 
+            try {
+				if (customerDao.checkDuplicationNameOrPhone("name", name) != null) {
+				     message = "이미 사용 중인 이름입니다.";
+				} 
+				// 전화번호 중복 검사
+				else if (customerDao.checkDuplicationNameOrPhone("phone", phone) != null) {
+				     message = "이미 사용 중인 전화번호입니다.";
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
         }
 
         // 4. DAO를 통한 회원가입 처리

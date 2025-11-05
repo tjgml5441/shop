@@ -178,7 +178,7 @@
     <h1>사원 목록</h1>
 	<c:import url="/WEB-INF/view/inc/empMenu.jsp"></c:import>
 	<div style="text-align: left;">
-		<a href="${pageContext.request.contextPath}/emp/addEmp" class="add-link">사원추가 +</a> (총 ${totalRow}명)
+		<a href="${pageContext.request.contextPath}/emp/addEmp" class="add-link">사원추가 +</a> (총 ${totalCount}명)
 	</div>
 	
 	<div>
