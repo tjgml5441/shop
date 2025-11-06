@@ -74,20 +74,14 @@ public class AddCustomerController extends HttpServlet {
             customer.setCustomerPhone(phone);
             customer.setPoint(0);
 
-            try {
-                int result = customerDao.insertCustomer(customer);
-                
-                if (result == 1) {
-                    response.sendRedirect(request.getContextPath() + "/out/login");
-                    return;
-                } else {
-                    message = "회원가입에 실패했습니다. (DB 오류)";
-                }
-            } catch (SQLException e) {
-                System.err.println("회원가입 중 DB 삽입 오류: " + e.getMessage());
-                e.printStackTrace();
-                message = "회원가입에 실패했습니다. (DB 오류)";
-            }
+            int result = customerDao.insertCustomer(customer);
+			
+			if (result == 1) {
+			    response.sendRedirect(request.getContextPath() + "/out/login");
+			    return;
+			} else {
+			    message = "회원가입에 실패했습니다. (DB 오류)";
+			}
         }
 
         // 5. 실패 시: 메시지와 기존 입력값, 플래그를 request에 담아 폼으로 포워딩

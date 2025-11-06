@@ -62,7 +62,7 @@ public class LoginController extends HttpServlet {
             message = "아이디 또는 비밀번호를 확인해주세요.";
         }
 
-        // 4. 실패 시: 메시지를 request에 담아 폼으로 포워딩
+        // 로그인 실패 또는 비활성 상태일 경우, 에러 메시지와 함께 폼으로 포워딩
         request.setAttribute("message", message);
         request.setAttribute("id", id);
         request.getRequestDispatcher("/WEB-INF/view/out/login.jsp").forward(request, response);

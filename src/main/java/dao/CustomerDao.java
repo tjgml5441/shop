@@ -5,14 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dto.Customer;
-// import dto.Outid; // Outid DTO 사용을 최소화
+// import dto.Outid; // CustomerDao에서는 Outid DTO 사용을 최소화
 
 public class CustomerDao {
 	
 	/**
-	 * 고객 목록 전체 개수 조회
-	 * @param type "active" (활성 고객) 또는 "force_out" (강제 탈퇴 고객)
-	 * @return 전체 고객 수 또는 0 (DB 오류 시)
+	 * 고객 목록 전체 개수 조회 (활성 고객만)
+	 * @param type 현재는 "active"만 가정
+	 * @return 전체 활성 고객 수
 	 * @throws SQLException
 	 */
 	public int selectCustomerListCount(String type) throws SQLException {
@@ -22,15 +22,10 @@ public class CustomerDao {
         int count = 0;
         
         // GDJ95 스키마 명시
-        String sql = "";
+        String sql = "SELECT COUNT(*) FROM GDJ95.CUSTOMER";
         
-        if ("active".equalsIgnoreCase(type)) {
-            // 활성 고객 카운트
-            sql = "SELECT COUNT(*) FROM GDJ95.CUSTOMER";
-        } else {
-            // 기본값으로 활성 고객 카운트 또는 0 반환 (OutidDao를 사용하는 것이 더 좋지만, Controller에서 분기하므로 DAO에서는 active만 처리하는 것으로 스니펫에서 가정)
-            sql = "SELECT COUNT(*) FROM GDJ95.CUSTOMER";
-        }
+        // type="out"인 경우는 OutidDao에서 처리해야 합니다.
+        // 여기서는 "active" 고객만 카운트합니다.
         
         try {
             conn = DBConnection.getConn(); 
@@ -51,34 +46,28 @@ public class CustomerDao {
         }
         return count;
 	}
-    
-    /**
-     * 고객 목록 조회 (페이징 적용) - 활성 고객만
-     * @param beginRow 시작 행 번호 (0부터 시작)
-     * @param rowPerPage 페이지 당 행 수
-     * @param type 현재는 "active"만 가정 (Controller에서 OutidDao를 사용할 수 있음)
-     * @return 페이지에 해당하는 고객 목록
-     * @throws SQLException
-     */
-    public List<Customer> selectCustomerListByPage(int beginRow, int rowPerPage, String type) throws SQLException {
-        Connection conn = null;
+	
+	/**
+	 * 고객 목록 조회 (페이징 적용) - 활성 고객만
+	 * @param beginRow 시작 행 번호
+	 * @param rowPerPage 페이지 당 행 수
+	 * @param type 현재는 "active"만 가정
+	 * @return 페이지에 해당하는 고객 리스트
+	 * @throws SQLException
+	 */
+	public List<Customer> selectCustomerListByPage(int beginRow, int rowPerPage, String type) throws SQLException {
+		Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         List<Customer> customerList = new ArrayList<>();
         
-        // GDJ95 스키마 명시
+        // GDJ95 스키마 명시 및 페이징 적용
         String sql = """
                        SELECT CUSTOMER_CODE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_PHONE, POINT, CREATEDATE
                        FROM GDJ95.CUSTOMER
-                       ORDER BY CUSTOMER_CODE DESC
+                       ORDER BY CREATEDATE DESC
                        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
                      """;
-        
-        // type="force_out"인 경우는 OutidDao에서 처리해야 하지만, 
-        // CustomerListController에서 하나의 리스트로 처리하기 위해 편의상 active만 구현.
-        if (!"active".equalsIgnoreCase(type)) {
-            return customerList; // active가 아니면 빈 리스트 반환 (OutidDao 사용을 유도)
-        }
         
         try {
             conn = DBConnection.getConn();
@@ -96,11 +85,65 @@ public class CustomerDao {
                 customer.setCustomerName(rs.getString("CUSTOMER_NAME"));
                 customer.setCustomerPhone(rs.getString("CUSTOMER_PHONE"));
                 customer.setPoint(rs.getInt("POINT"));
-                customer.setCreateDate(rs.getString("CREATEDATE"));
+                customer.setCreateDate(rs.getDate("CREATEDATE"));
                 customerList.add(customer);
             }
         } catch (SQLException e) {
-            System.err.println("CustomerDao: 활성 고객 리스트 조회 중 오류 발생: " + e.getMessage());
+            System.err.println("고객 리스트 조회 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // 예외를 호출한 곳으로 던짐
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.close(); 
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return customerList;
+	}
+	
+	/**
+	 * 고객 로그인
+	 * @param id 고객 ID
+	 * @param password 고객 비밀번호
+	 * @return 일치하는 고객 DTO 또는 null
+	 * @throws SQLException
+	 */
+	public Customer login(String id, String password) throws SQLException {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        Customer customer = null;
+        
+        // GDJ95 스키마 명시
+        String sql = """
+                       SELECT CUSTOMER_CODE, CUSTOMER_ID, CUSTOMER_NAME, CUSTOMER_PHONE, POINT, CREATEDATE
+                       FROM GDJ95.CUSTOMER
+                       WHERE CUSTOMER_ID = ? AND CUSTOMER_PW = ?
+                     """;
+        
+        try {
+            conn = DBConnection.getConn(); 
+            pstmt = conn.prepareStatement(sql);
+            
+            pstmt.setString(1, id);
+            pstmt.setString(2, password);
+            
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                customer = new Customer();
+                customer.setCustomerCode(rs.getInt("CUSTOMER_CODE"));
+                customer.setCustomerId(rs.getString("CUSTOMER_ID"));
+                customer.setCustomerName(rs.getString("CUSTOMER_NAME"));
+                customer.setCustomerPhone(rs.getString("CUSTOMER_PHONE"));
+                customer.setPoint(rs.getInt("POINT"));
+                customer.setCreateDate(rs.getDate("CREATEDATE"));
+            }
+        } catch (SQLException e) {
+            System.err.println("고객 로그인 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
             throw e; 
         } finally {
@@ -112,45 +155,45 @@ public class CustomerDao {
                 e.printStackTrace();
             }
         }
-        return customerList;
+        return customer;
     }
-    
-    /**
-     * ID 중복 검사 (CUSTOMER, EMP, OUTID 테이블 통합)
-     * @param id 검사할 ID
-     * @return 중복된 ID (존재하지 않으면 null)
-     */
-    public String checkDuplicationId(String id) {
+	
+	/**
+	 * ID 중복 검사 (CUSTOMER, EMP, OUTID 테이블 통합)
+	 * @param id 검사할 ID
+	 * @return 중복된 ID (있으면) 또는 null (없으면)
+	 * @throws SQLException
+	 */
+	public String checkDuplicationId(String id) throws SQLException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         String duplicatedId = null;
         
-        // CUSTOMER, EMP, OUTID 테이블에서 ID/CUSTOMER_ID/ID 컬럼을 모두 검색
+        // CUSTOMER, EMP, OUTID 테이블에서 ID 중복 확인
         String sql = """
-            SELECT customer_id AS id FROM GDJ95.CUSTOMER WHERE customer_id = ?
-            UNION ALL
-            SELECT emp_id AS id FROM GDJ95.EMP WHERE emp_id = ?
-            UNION ALL
-            SELECT id FROM GDJ95.OUTID WHERE id = ?
-            """;
+                     SELECT ID FROM (
+                         SELECT CUSTOMER_ID AS ID FROM GDJ95.CUSTOMER WHERE CUSTOMER_ID = ?
+                         UNION ALL
+                         SELECT EMP_ID AS ID FROM GDJ95.EMP WHERE EMP_ID = ?
+                         UNION ALL
+                         SELECT ID FROM GDJ95.OUTID WHERE ID = ?
+                     ) WHERE ROWNUM = 1
+                     """;
         
         try {
             conn = DBConnection.getConn();
             pstmt = conn.prepareStatement(sql);
-            // 3개의 파라미터 모두 같은 ID로 설정
-            pstmt.setString(1, id);
-            pstmt.setString(2, id);
-            pstmt.setString(3, id);
+            
+            pstmt.setString(1, id); // CUSTOMER
+            pstmt.setString(2, id); // EMP
+            pstmt.setString(3, id); // OUTID
             
             rs = pstmt.executeQuery();
             
             if (rs.next()) {
-                duplicatedId = rs.getString("id");
+                duplicatedId = rs.getString("ID");
             }
-        } catch (SQLException e) {
-            System.err.println("ID 중복 검사 중 오류 발생: " + e.getMessage());
-            e.printStackTrace();
         } finally {
             try {
                 if (rs != null) rs.close();
@@ -204,33 +247,78 @@ public class CustomerDao {
         }
         return duplicatedValue;
     }
-
-    /**
-     * 고객 강제 탈퇴 처리 (트랜잭션: OUTID에 삽입 후 CUSTOMER에서 삭제)
-     * @param customerId 강제 탈퇴할 고객 ID
-     * @param reason 탈퇴 사유
-     * @return 성공 시 1, 실패 시 0
-     * @throws Exception 트랜잭션 오류 발생 시 롤백을 위해 던짐
-     */
-    public int deleteCustomerByEmp(String customerId, String reason) throws Exception {
-        Connection conn = null;
-        PreparedStatement pstmtOutid = null;
-        PreparedStatement pstmtDelete = null;
+	
+	/**
+	 * 고객 회원가입
+	 * @param customer 고객 DTO
+	 * @return 성공한 행의 수 (1이면 성공)
+	 */
+	public int insertCustomer(Customer customer) {
+		Connection conn = null;
+        PreparedStatement pstmt = null;
         int result = 0;
         
-        // 1. OUTID 테이블에 삽입
-        String insertOutidSql = """
-            INSERT INTO GDJ95.OUTID(ID, REASON, CREATEDATE)
-            VALUES(?, ?, SYSDATE)
-            """;
-            
-        // 2. CUSTOMER 테이블에서 삭제
-        String deleteCustomerSql = "DELETE FROM GDJ95.CUSTOMER WHERE CUSTOMER_ID = ?";
+        // GDJ95 스키마 명시
+        String sql = """
+                     INSERT INTO GDJ95.CUSTOMER 
+                     (CUSTOMER_CODE, CUSTOMER_ID, CUSTOMER_PW, CUSTOMER_NAME, CUSTOMER_PHONE, POINT, CREATEDATE)
+                     VALUES (SEQ_CUSTOMER.NEXTVAL, ?, ?, ?, ?, ?, SYSDATE)
+                     """;
         
         try {
-            conn = DBConnection.getConn();
-            // 트랜잭션 시작 (Auto Commit 해제)
-            conn.setAutoCommit(false); 
+        	conn = DBConnection.getConn(); 
+            pstmt = conn.prepareStatement(sql);
+            
+            pstmt.setString(1, customer.getCustomerId());
+            pstmt.setString(2, customer.getCustomerPw());
+            pstmt.setString(3, customer.getCustomerName());
+            pstmt.setString(4, customer.getCustomerPhone());
+            pstmt.setInt(5, customer.getPoint());
+            
+            result = pstmt.executeUpdate();
+            
+        } catch (SQLException e) {
+            System.err.println("고객 등록 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.close(); 
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+	}
+
+	/**
+	 * 직원(Emp)에 의한 고객 강제 탈퇴 (트랜잭션 적용)
+	 * 1. OUTID 테이블에 ID와 사유 삽입
+	 * 2. CUSTOMER 테이블에서 고객 삭제
+	 * @param customerId 강제 탈퇴할 고객 ID
+	 * @param reason 강제 탈퇴 사유 (memo)
+	 * @return 성공 여부 (1: 성공, 0: 실패)
+	 */
+	public int deleteCustomerByEmp(String customerId, String reason) throws SQLException {
+		Connection conn = null;
+        PreparedStatement pstmtOutid = null;
+        PreparedStatement pstmtDelete = null;
+        int result = 0; // 0: 실패, 1: 성공
+        
+        // 1. OUTID 테이블 삽입 SQL (GDJ95 스키마 명시)
+        String insertOutidSql = """
+        	INSERT INTO GDJ95.OUTID (ID, REASON, CREATEDATE)
+        	VALUES (?, ?, SYSDATE)
+        """;
+        
+        // 2. CUSTOMER 테이블 삭제 SQL (GDJ95 스키마 명시)
+        String deleteCustomerSql = """
+        	DELETE FROM GDJ95.CUSTOMER WHERE CUSTOMER_ID = ?
+        """;
+        
+        try {
+            conn = DBConnection.getConn(); 
+			conn.setAutoCommit(false); // 트랜잭션 시작
             
             // 1. OUTID에 삽입
             pstmtOutid = conn.prepareStatement(insertOutidSql);
@@ -245,71 +333,34 @@ public class CustomerDao {
                 int deleteResult = pstmtDelete.executeUpdate();
                 
                 if (deleteResult == 1) {
-                    conn.commit(); // 최종 성공: 커밋
-                    result = 1; 
+                    conn.commit(); // 커밋
+                    result = 1; // 최종 성공
                 } else {
-                    conn.rollback(); // CUSTOMER 삭제 실패: 롤백
+                    conn.rollback(); // 롤백
                     System.err.println("CUSTOMER 테이블 삭제 실패. ID: " + customerId);
                 }
             } else {
-                 conn.rollback(); // OUTID 삽입 실패: 롤백
+                 conn.rollback(); // 롤백
                  System.err.println("OUTID 테이블 삽입 실패. ID: " + customerId);
             }
             
         } catch (SQLException e) {
-            // DB 오류 발생 시 롤백
-            if (conn != null) conn.rollback(); 
+            conn.rollback(); // 오류 발생 시 롤백
             System.err.println("고객 강제 탈퇴 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
-            throw e; // 호출한 곳으로 예외 전달
+            throw e; // 예외를 호출한 곳으로 던짐
         } finally {
-            // 자원 해제
             try {
                 if (pstmtDelete != null) pstmtDelete.close();
                 if (pstmtOutid != null) pstmtOutid.close();
-                if (conn != null) conn.close(); 
+                if (conn != null) {
+                    conn.setAutoCommit(true); // 커넥션을 반환하기 전에 auto commit을 다시 true로 설정
+                    conn.close(); 
+                }
             } catch (SQLException e) {
                 e.printStackTrace();
             }
         }
         return result;
-    }
-    
-    // ********* 기타 메서드 (insertCustomer, login 등)는 편의상 생략합니다. *********
-    // ********* 파일 전체를 요청하셨으나, 수정된 부분만 명확히 보여드리고자 생략합니다. *********
-    
-    /**
-     * 고객 정보 삽입 (회원가입) - AddCustomerController에서 사용
-     * (이하 내용은 스니펫에 없으나, AddCustomerController에서 사용되므로 구조상 존재해야 합니다.)
-     */
-    public int insertCustomer(Customer customer) throws SQLException {
-        Connection conn = null;
-        PreparedStatement pstmt = null;
-        int result = 0;
-        String sql = """
-            INSERT INTO GDJ95.CUSTOMER(CUSTOMER_CODE, CUSTOMER_ID, CUSTOMER_PW, CUSTOMER_NAME, CUSTOMER_PHONE, POINT, CREATEDATE)
-            VALUES(SEQ_CUSTOMER.NEXTVAL, ?, ?, ?, ?, ?, SYSDATE)
-            """;
-        
-        try {
-            conn = DBConnection.getConn();
-            pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, customer.getCustomerId());
-            pstmt.setString(2, customer.getCustomerPw());
-            pstmt.setString(3, customer.getCustomerName());
-            pstmt.setString(4, customer.getCustomerPhone());
-            pstmt.setInt(5, customer.getPoint());
-            
-            result = pstmt.executeUpdate();
-            
-        } finally {
-            try {
-                if (pstmt != null) pstmt.close();
-                if (conn != null) conn.close(); 
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        return result;
-    }
+	}
 }

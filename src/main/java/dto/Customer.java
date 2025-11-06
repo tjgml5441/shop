@@ -9,57 +9,68 @@ public class Customer {
     private String customerName;
     private String customerPhone;
     private int point;
-    private String createDate;
-	public int getCustomerCode() {
-		return customerCode;
-	}
-	public void setCustomerCode(int customerCode) {
-		this.customerCode = customerCode;
-	}
-	public String getCustomerId() {
-		return customerId;
-	}
-	public void setCustomerId(String customerId) {
-		this.customerId = customerId;
-	}
-	public String getCustomerPw() {
-		return customerPw;
-	}
-	public void setCustomerPw(String customerPw) {
-		this.customerPw = customerPw;
-	}
-	public String getCustomerName() {
-		return customerName;
-	}
-	public void setCustomerName(String customerName) {
-		this.customerName = customerName;
-	}
-	public String getCustomerPhone() {
-		return customerPhone;
-	}
-	public void setCustomerPhone(String customerPhone) {
-		this.customerPhone = customerPhone;
-	}
-	public int getPoint() {
-		return point;
-	}
-	public void setPoint(int point) {
-		this.point = point;
-	}
-	public String getCreateDate() {
-		return createDate;
-	}
-	public void setCreateDate(String createDate) {
-		this.createDate = createDate;
-	}
-	@Override
-	public String toString() {
-		return "Customer [customerCode=" + customerCode + ", customerId=" + customerId + ", customerPw=" + customerPw
-				+ ", customerName=" + customerName + ", customerPhone=" + customerPhone + ", point=" + point
-				+ ", createDate=" + createDate + "]";
-	}
+    private Date createDate; // String에서 Date로 변경
     
+    public int getCustomerCode() {
+        return customerCode;
+    }
     
+    public void setCustomerCode(int customerCode) {
+        this.customerCode = customerCode;
+    }
     
+    public String getCustomerId() {
+        return customerId;
+    }
+    
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+    
+    public String getCustomerPw() {
+        return customerPw;
+    }
+    
+    public void setCustomerPw(String customerPw) {
+        this.customerPw = customerPw;
+    }
+    
+    public String getCustomerName() {
+        return customerName;
+    }
+    
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+    
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+    
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+    
+    public int getPoint() {
+        return point;
+    }
+    
+    public void setPoint(int point) {
+        this.point = point;
+    }
+    
+    public Date getCreateDate() { // String에서 Date로 변경
+        return createDate;
+    }
+    
+    public void setCreateDate(Date createDate) { // String에서 Date로 변경
+        this.createDate = createDate;
+    }
+    
+    @Override
+    public String toString() {
+        return "Customer [customerCode=" + customerCode + ", customerId=" + customerId + ", customerPw=" + customerPw
+                + ", customerName=" + customerName + ", customerPhone=" + customerPhone + ", point=" + point
+                + ", createDate=" + createDate + "]";
+    }
 }
-	
