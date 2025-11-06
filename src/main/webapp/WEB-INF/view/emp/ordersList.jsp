@@ -1,10 +1,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>shop - 상품 관리</title>
+<title>shop - 주문 관리</title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <style>
 /* customerList.jsp의 전체 스타일 적용 */
@@ -111,14 +111,14 @@
 	    display: inline-block;
 	    font-size: 14px;
 	}
-	.active-1 { /* 활성화 */
+	.active-1 { /* 활성화/성공 색상 */
 	    background-color: #9f8473;
 	    transition: background-color 0.3s;
 	}
 	.active-1:hover {
 	    background-color: #6c5d53;
 	}
-	.active-0 { /* 비활성화 */
+	.active-0 { /* 비활성화/위험 색상 */
 	    background-color: #dc3545;
 	    transition: background-color 0.3s;
 	}
@@ -140,25 +140,49 @@
 	.add-link:hover {
 	    background-color: #6c5d53;
 	}
-    /* goodsList 전용 스타일: 상품 추가 버튼을 add-link와 유사하게 설정 */
-    .btn-add-goods {
-        display: inline-block;
-        padding: 8px 15px;
-        background-color: #c7b199; /* add-link 색상 사용 */
+    .btn-search {
+        padding: 6px 12px;
+        background-color: #9f8473;
         color: white;
-        text-decoration: none;
-        font-weight: normal;
-        font-size: 15px;
-        border-radius: 5px; /* customerList 상단 버튼과 유사하게 */
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
         transition: background-color 0.3s;
+        margin-left: 5px; 
     }
-    .btn-add-goods:hover {
+    .btn-search:hover {
         background-color: #6c5d53;
+    }
+    .action-btn {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 5px;
+        text-decoration: none;
+        color: white;
+        font-size: 13px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        margin: 2px;
+    }
+    .btn-order {
+        background-color: #6c757d;
+    }
+    .btn-order:hover {
+        background-color: #5a6268;
+    }
+    .btn-force-out {
+        background-color: #dc3545;
+    }
+    .btn-force-out:hover {
+        background-color: #c82333;
     }
 </style>
 </head>
+
 <body>
-	
+    <%-- customerList.jsp와 동일한 상단바 구조 추가 --%>
 	<div class="top-bar">
 	        <div class="btn-group">
 	            <a href="${pageContext.request.contextPath}/emp/empIndex" class="btn-home">HOME</a>
@@ -176,73 +200,77 @@
 	        </div>
 	    </div>
 
-	<h1>상품 관리</h1>
+	<h1>주문 관리</h1>
 	
 	<c:import url="/WEB-INF/view/inc/empMenu.jsp"></c:import>
 	
 	<div>
-		<h2 style="display: inline-block; margin-right: 15px;">상품 정보 리스트</h2>
-        <a href="${pageContext.request.contextPath}/emp/addGoods" class="btn-add-goods" style="float: right;">상품추가</a>
-        
-		<table border="1">
+		<h2>전체 주문 리스트</h2>
+	    <%-- border="1" 제거 --%>
+		<table>
 			<thead>
+                <%-- th 대신 td 사용 --%>
                 <tr>
-                    <td>상품 코드</td>
-                    <td>상품 이름</td>
-                    <td>가격</td>
-                    <td>재고</td>
-                    <td>포인트 적립률</td>
-                    <td>등록일</td>
-                    <td>기능</td>
+                    <td>orderCode</td>
+                    <td>goodsName</td>
+                    <td>goodsPrice</td>
+                    <td>orderQuantity</td>
+                    <td>orderPrice</td>
+                    <td>customerName</td>
+                    <td>customerPhone</td>
+                    <td>address</td>
+                    <td>createdate</td>
+                    <td>orderState</td>
                 </tr>
 			</thead>
 			<tbody>
-                <c:choose>
-                    <c:when test="${not empty goodsList}">
-                        <c:forEach var="goods" items="${goodsList}">
-                            <tr>
-                                <td>${goods.goodsCode}</td>
-                                <td>${goods.goodsName}</td>
-                                <td>${goods.goodsPrice}</td>
-                                <td>${goods.goodsStock}</td>
-                                <td>${goods.pointRate}%</td>
-                                <td>${goods.createDate}</td>
-                                <td>
-                                    <a href="${pageContext.request.contextPath}/emp/modifyGoods?goodsCode=${goods.goodsCode}" 
-                                       class="active-btn active-1">수정</a>
-                                    <a href="${pageContext.request.contextPath}/emp/removeGoods?goodsCode=${goods.goodsCode}"
-                                       class="active-btn active-0">삭제</a>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                    </c:when>
-                    <c:otherwise>
-                        <tr>
-                            <td colspan="7">등록된 상품이 없습니다.</td>
-                        </tr>
-                    </c:otherwise>
-                </c:choose>
+				<c:forEach var="m" items="${list}">
+					<tr>
+						<td>${m.orderCode}</td>
+						<td>${m.goodsName}</td>
+						<td>${m.goodsPrice}</td>
+						<td>${m.orderQuantity}</td>
+						<td>${m.orderPrice}</td>
+						<td>${m.customerName}</td>
+						<td>${m.customerPhone}</td>
+						<td>${m.address}</td>
+						<td>${m.createdate}</td>
+						<td>
+                            <%-- 주문 상태 링크에 active-btn 스타일 적용 --%>
+                            <a href="${pageContext.request.contextPath}/emp/modifyOrderState?orderCode=${m.orderCode}&orderState=${m.orderState}" 
+                               class="active-btn active-1">
+                               ${m.orderState}
+                            </a>
+                        </td>
+					</tr>
+				</c:forEach>
+                <c:if test="${empty list}">
+                    <tr>
+                        <td colspan="10">조회된 주문 내역이 없습니다.</td>
+                    </tr>
+                </c:if>
 			</tbody>
 		</table>
-        
-        <div class="pagination">
-            <c:if test="${currentPage > 1}">
-                <a href="${pageContext.request.contextPath}/emp/goodsList?currentPage=${currentPage - 1}">이전</a>
-            </c:if>
-            <c:forEach var="p" begin="1" end="${lastPage}">
-                <c:choose>
-                    <c:when test="${p eq currentPage}">
-                        <span class="current-page">${p}</span>
-                    </c:when>
-                    <c:otherwise>
-                        <a href="${pageContext.request.contextPath}/emp/goodsList?currentPage=${p}">${p}</a>
-                    </c:otherwise>
-                </c:choose>
-            </c:forEach>
-            <c:if test="${currentPage < lastPage}">
-                <a href="${pageContext.request.contextPath}/emp/goodsList?currentPage=${currentPage + 1}">다음</a>
-            </c:if>
-        </div>
-	</div>	
+	</div>
+    
+    <%-- 페이지네이션 영역도 customerList와 동일하게 임시 적용 --%>
+    <div class="pagination">
+        <c:if test="${currentPage > 1}">
+            <a href="${pageContext.request.contextPath}/emp/ordersList?currentPage=${currentPage - 1}">이전</a>
+        </c:if>
+        <c:forEach var="p" begin="1" end="${lastPage}">
+            <c:choose>
+                <c:when test="${p eq currentPage}">
+                    <span class="current-page">${p}</span>
+                </c:when>
+                <c:otherwise>
+                    <a href="${pageContext.request.contextPath}/emp/ordersList?currentPage=${p}">${p}</a>
+                </c:otherwise>
+            </c:choose>
+        </c:forEach>
+        <c:if test="${currentPage < lastPage}">
+            <a href="${pageContext.request.contextPath}/emp/ordersList?currentPage=${currentPage + 1}">다음</a>
+        </c:if>
+    </div>
 </body>
 </html>

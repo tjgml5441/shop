@@ -47,7 +47,7 @@ public class OutidDao {
      * 강제 탈퇴 ID 리스트 조회 (페이징 포함)
      * @param beginRow 시작 행 번호
      * @param rowPerPage 페이지 당 행 수
-     * @return 페이지에 해당하는 탈퇴 ID 리스트
+     * @return 페이지에 해당하는 탈퇴 ID 목록
      * @throws SQLException
      */
     public List<Outid> selectOutidListByPage(int beginRow, int rowPerPage) throws SQLException {
@@ -56,10 +56,9 @@ public class OutidDao {
         ResultSet rs = null;
         List<Outid> outidList = new ArrayList<>();
         
-        // ★★★ 수정된 부분: SQL에서 REASON 대신 MEMO 컬럼 사용 ★★★
         // GDJ95 스키마 명시
         String sql = """
-                       SELECT ID, MEMO, CREATEDATE
+                       SELECT ID, REASON, CREATEDATE
                        FROM GDJ95.OUTID
                        ORDER BY CREATEDATE DESC
                        OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
@@ -77,8 +76,7 @@ public class OutidDao {
             while (rs.next()) {
                 Outid outid = new Outid();
                 outid.setId(rs.getString("ID"));
-                // ★★★ 수정된 부분: rs.getString("MEMO")를 outid.setMemo()로 매핑 ★★★
-                outid.setMemo(rs.getString("MEMO")); 
+                outid.setReason(rs.getString("REASON"));
                 outid.setCreateDate(rs.getDate("CREATEDATE"));
                 outidList.add(outid);
             }

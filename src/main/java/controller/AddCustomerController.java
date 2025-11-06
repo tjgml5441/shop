@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.SQLException;
+import java.sql.SQLException; // 추가된 import
 
 import dao.CustomerDao;
 import dto.Customer;
@@ -36,18 +36,21 @@ public class AddCustomerController extends HttpServlet {
         CustomerDao customerDao = new CustomerDao();
         
         // 2. 기본 유효성 검사 및 아이디 중복 확인 플래그 검사
-        if (id == null || id.isEmpty() || password == null || password.isEmpty() || name == null || name.isEmpty() || phone == null || phone.isEmpty()) {
-            message = "모든 항목을 입력해야 합니다.";
+        if (id == null || id.isEmpty() || password == null || password.isEmpty() || 
+            passwordCheck == null || passwordCheck.isEmpty() || name == null || name.isEmpty() ||
+            phone == null || phone.isEmpty()) {
+            
+            message = "모든 필드를 입력해야 합니다.";
         } else if (!password.equals(passwordCheck)) {
-            message = "비밀번호와 비밀번호 확인이 일치하지 않습니다.";
-        } else if (idCheck == null || !idCheck.equals("1")) {
-            message = "아이디 중복 확인을 완료해야 합니다.";
+            message = "비밀번호가 일치하지 않습니다.";
+        } else if (!"Y".equals(idCheck)) { // 아이디 중복 확인 플래그 검사
+            message = "아이디 중복 확인이 필요합니다.";
         }
         
-        // 3. 이름, 전화번호 중복 검사 (아이디 중복확인 완료 후에만 실행)
+        // 3. 2차 중복 검사 (이름/전화번호)
         if (message.isEmpty()) {
-            // 이름 중복 검사
-            try {
+			try {
+				// 이름 중복 검사
 				if (customerDao.checkDuplicationNameOrPhone("name", name) != null) {
 				     message = "이미 사용 중인 이름입니다.";
 				} 
@@ -56,8 +59,9 @@ public class AddCustomerController extends HttpServlet {
 				     message = "이미 사용 중인 전화번호입니다.";
 				}
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
+				System.err.println("회원가입 중 2차 중복 검사 오류: " + e.getMessage());
 				e.printStackTrace();
+				message = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
 			} 
         }
 
@@ -70,12 +74,18 @@ public class AddCustomerController extends HttpServlet {
             customer.setCustomerPhone(phone);
             customer.setPoint(0);
 
-            int result = customerDao.insertCustomer(customer);
-            
-            if (result == 1) {
-                response.sendRedirect(request.getContextPath() + "/out/login");
-                return;
-            } else {
+            try {
+                int result = customerDao.insertCustomer(customer);
+                
+                if (result == 1) {
+                    response.sendRedirect(request.getContextPath() + "/out/login");
+                    return;
+                } else {
+                    message = "회원가입에 실패했습니다. (DB 오류)";
+                }
+            } catch (SQLException e) {
+                System.err.println("회원가입 중 DB 삽입 오류: " + e.getMessage());
+                e.printStackTrace();
                 message = "회원가입에 실패했습니다. (DB 오류)";
             }
         }

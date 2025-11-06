@@ -9,12 +9,14 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.sql.SQLException;
 
 import com.google.gson.Gson;
 import dao.CustomerDao;
 
 /**
  * AJAX 요청을 처리하여 ID 중복 여부를 JSON으로 응답합니다.
+ * CUSTOMER, EMP, OUTID 테이블 통합 확인
  */
 @WebServlet("/out/idCkRestController")
 public class IdCkRestController extends HttpServlet {
@@ -27,8 +29,16 @@ public class IdCkRestController extends HttpServlet {
 		String id = request.getParameter("id"); 
 		
 		CustomerDao customerDao = new CustomerDao();
-		// DAO의 ID 중복 확인 메서드 호출 (CUSTOMER, EMP, OUTID 통합 확인)
-		String resultId = customerDao.checkDuplicationId(id); 
+		String resultId = null;
+		
+		try {
+			// DAO의 ID 중복 확인 메서드 호출 (CUSTOMER, EMP, OUTID 통합 확인)
+			resultId = customerDao.checkDuplicationId(id); 
+		} catch (Exception e) {
+			System.err.println("IdCkRestController: DB 오류 발생 - " + e.getMessage());
+			e.printStackTrace();
+		}
+		
 		
 		Map<String, Object> map = new HashMap<>();
 		
@@ -40,13 +50,16 @@ public class IdCkRestController extends HttpServlet {
 			map.put("result", "available");
 		}
 		
-		Gson gson = new Gson();
-		String jsonResult = gson.toJson(map);
-		
+		// JSON 응답 설정
 		response.setContentType("application/json");
 		response.setCharacterEncoding("UTF-8");
+		
+		// JSON 변환 및 출력
 		PrintWriter out = response.getWriter();
-		out.print(jsonResult); 
+		Gson gson = new Gson();
+		String json = gson.toJson(map);
+		out.print(json);
 		out.flush();
 	}
+
 }

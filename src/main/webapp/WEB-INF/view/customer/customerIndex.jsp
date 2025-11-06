@@ -9,6 +9,8 @@
 </head>
 <body>
 	<h1>customerIndex</h1>
+	<!-- emp menu include -->
+		<c:import url="/WEB-INF/view/inc/customerMenu.jsp"></c:import>
 	<div>
 		${loginCustomer.customerName}님 반갑습니다.
 		(point : ${loginCustomer.point})

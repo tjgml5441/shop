@@ -49,6 +49,4 @@ public class GoodsImg {
 		return "GoodsImg [goodsCode=" + goodsCode + ", fileName=" + fileName + ", originName=" + originName
 				+ ", contentType=" + contentType + ", createdate=" + createdate + ", filesize=" + filesize + "]";
 	}
-	
-	
 }

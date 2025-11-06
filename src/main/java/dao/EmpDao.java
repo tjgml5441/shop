@@ -47,68 +47,63 @@ public class EmpDao {
 	 * 사원 목록 조회 (페이징 적용)
 	 * @param beginRow 시작 행 번호 (0부터 시작)
 	 * @param rowPerPage 페이지 당 행 수
-	 * @return 페이지에 해당하는 Emp 리스트
+	 * @return 페이지에 해당하는 사원 목록
 	 * @throws SQLException
 	 */
-	public List<Emp> selectEmpListByPage(int beginRow, int rowPerPage) throws SQLException {
-		// 자원 선언
-		Connection conn = null;
+    public List<Emp> selectEmpListByPage(int beginRow, int rowPerPage) throws SQLException {
+        Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
-		
-        // SQL 구문 오류 수정 및 스키마 GDJ95 명시
-		String sql = """
-						SELECT EMP_CODE empCode, EMP_ID empId, EMP_NAME empName, ACTIVE active, CREATEDATE createdate
-						FROM GDJ95.EMP
-						ORDER BY EMP_CODE
-						OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
-					 """;
-		
-		// 리스트 객체 미리 생성
-		List<Emp> list = new ArrayList<>();
-		
-		try {
-			conn = DBConnection.getConn();
-			pstmt = conn.prepareStatement(sql);
-			
-			// OFFSET 및 FETCH 파라미터 바인딩
-			pstmt.setInt(1, beginRow); 
-			pstmt.setInt(2, rowPerPage);
-			
-			rs = pstmt.executeQuery();
-			
-			while(rs.next()) {
-				Emp e = new Emp();
-				
-				e.setEmpCode(rs.getInt("empCode"));
-				e.setEmpId(rs.getString("empId"));
-				e.setEmpName(rs.getString("empName"));
-				e.setActive(rs.getInt("active"));
-				e.setCreateDate(rs.getDate("createdate"));
-				
-				list.add(e);
-			}
-		} catch (SQLException e) {
+        List<Emp> empList = new ArrayList<>();
+        
+        // GDJ95 스키마 명시
+        String sql = """
+                       SELECT EMP_CODE, EMP_ID, EMP_NAME, ACTIVE, CREATEDATE
+                       FROM GDJ95.EMP
+                       ORDER BY EMP_CODE DESC
+                       OFFSET ? ROWS FETCH NEXT ? ROWS ONLY
+                     """;
+        
+        try {
+            conn = DBConnection.getConn();
+            pstmt = conn.prepareStatement(sql);
+            
+            pstmt.setInt(1, beginRow);
+            pstmt.setInt(2, rowPerPage);
+            
+            rs = pstmt.executeQuery();
+            
+            while (rs.next()) {
+                Emp emp = new Emp();
+                emp.setEmpCode(rs.getInt("EMP_CODE"));
+                emp.setEmpId(rs.getString("EMP_ID"));
+                emp.setEmpName(rs.getString("EMP_NAME"));
+                emp.setActive(rs.getInt("ACTIVE")); // 활성화 상태 추가
+                emp.setCreateDate(rs.getDate("CREATEDATE"));
+                empList.add(emp);
+            }
+        } catch (SQLException e) {
             System.err.println("EmpDao: 사원 리스트 조회 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
             throw e; // 예외를 호출한 곳으로 던짐
-		} finally {
-			try {
+        } finally {
+            // 자원 해제
+            try {
                 if (rs != null) rs.close();
                 if (pstmt != null) pstmt.close();
                 if (conn != null) conn.close(); 
             } catch (SQLException e) {
                 e.printStackTrace();
             }
-		}
-		return list;
-	}
+        }
+        return empList;
+    }
     
     /**
-     * ★★★ 오류 해결 메서드: 사원 로그인 처리 ★★★
+     * 사원 로그인 처리
      * @param id 사원 ID
      * @param password 사원 비밀번호
-     * @return 로그인 성공 시 Emp 객체 (ACTIVE 포함), 실패 시 null
+     * @return 로그인 성공 시 Emp 객체, 실패 시 null
      * @throws SQLException
      */
     public Emp login(String id, String password) throws SQLException {
@@ -117,12 +112,15 @@ public class EmpDao {
         ResultSet rs = null;
         Emp employee = null;
         
-        // 스키마 GDJ95 명시
-        // EMP_PW는 암호화되지 않은 상태라고 가정하고 조회
-        String sql = "SELECT EMP_CODE, EMP_ID, EMP_PW, EMP_NAME, ACTIVE, CREATEDATE FROM GDJ95.EMP WHERE EMP_ID = ? AND EMP_PW = ?";
+        // GDJ95 스키마 명시
+        String sql = """
+                       SELECT EMP_CODE, EMP_ID, EMP_NAME, ACTIVE, CREATEDATE
+                       FROM GDJ95.EMP
+                       WHERE EMP_ID = ? AND EMP_PW = ?
+                     """;
         
         try {
-            conn = DBConnection.getConn(); 
+            conn = DBConnection.getConn();
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, id);
             pstmt.setString(2, password);
@@ -133,14 +131,12 @@ public class EmpDao {
                 employee = new Emp();
                 employee.setEmpCode(rs.getInt("EMP_CODE"));
                 employee.setEmpId(rs.getString("EMP_ID"));
-                employee.setEmpPw(rs.getString("EMP_PW")); 
                 employee.setEmpName(rs.getString("EMP_NAME"));
-                // ACTIVE 컬럼을 가져옵니다.
-                employee.setActive(rs.getInt("ACTIVE")); 
+                employee.setActive(rs.getInt("ACTIVE")); // 활성화 상태 추가
                 employee.setCreateDate(rs.getDate("CREATEDATE"));
             }
         } catch (SQLException e) {
-            System.err.println("Employee 로그인 중 오류 발생: " + e.getMessage());
+            System.err.println("EmpDao: 로그인 처리 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
             throw e; // 예외를 호출한 곳으로 던짐
         } finally {
@@ -191,4 +187,5 @@ public class EmpDao {
         }
         return result;
     }
+    // ********* 기타 메서드는 편의상 생략합니다. *********
 }
