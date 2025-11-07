@@ -184,31 +184,38 @@
 		<h2 style="display: inline-block; margin-right: 15px;">상품 정보 리스트</h2>
         <a href="${pageContext.request.contextPath}/emp/addGoods" class="btn-add-goods" style="float: right;">상품추가</a>
         
-		<table border="1">
-			<thead>
+		<table class="list-table">
+            <thead>
                 <tr>
-                    <td>상품 코드</td>
-                    <td>상품 이름</td>
-                    <td>가격</td>
-                    <td>재고</td>
-                    <td>포인트 적립률</td>
-                    <td>등록일</td>
-                    <td>기능</td>
+                    <th>goodsCode</th>
+                    <th>상품이미지</th> <th>goodsName</th>
+                    <th>goodsPrice</th>
+                    <th>pointRate</th>
+                    <th>soldout</th>
+                    <th>createdate</th>
+                    <th>수정/삭제</th>
                 </tr>
-			</thead>
-			<tbody>
+            </thead>
+            <tbody>
                 <c:choose>
                     <c:when test="${not empty goodsList}">
                         <c:forEach var="goods" items="${goodsList}">
                             <tr>
                                 <td>${goods.goodsCode}</td>
+                                <td>
+                                    <c:if test="${not empty goods.fileName}">
+                                        <img src="${pageContext.request.contextPath}/upload/${goods.fileName}" 
+                                             alt="${goods.goodsName} 이미지" 
+                                             style="width: 50px; height: 50px; object-fit: cover;" />
+                                    </c:if>
+                                </td>
                                 <td>${goods.goodsName}</td>
                                 <td>${goods.goodsPrice}</td>
-                                <td>${goods.goodsStock}</td>
-                                <td>${goods.pointRate}%</td>
-                                <td>${goods.createDate}</td>
+                                <td>${goods.pointRate}</td>
+                                <td>${goods.soldout}</td>
+                                <td>${goods.createdate}</td>
                                 <td>
-                                    <a href="${pageContext.request.contextPath}/emp/modifyGoods?goodsCode=${goods.goodsCode}" 
+                                    <a href="${pageContext.request.contextPath}/emp/modifyGoods?goodsCode=${goods.goodsCode}"
                                        class="active-btn active-1">수정</a>
                                     <a href="${pageContext.request.contextPath}/emp/removeGoods?goodsCode=${goods.goodsCode}"
                                        class="active-btn active-0">삭제</a>

@@ -7,16 +7,17 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import jakarta.servlet.http.HttpSession; 
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID; // UUID 라이브러리 추가
+import java.util.UUID; 
 
+import dao.GoodsDao; 
 import dto.Emp;
-import dto.Goods; // Goods DTO 임포트 필요 (추정)
-import dto.GoodsImg; // GoodsImg DTO 임포트 필요
+import dto.Goods; 
+import dto.GoodsImg; 
 
-// 파일 업로드를 위한 설정 추가
 @MultipartConfig(
     fileSizeThreshold = 1024 * 1024 * 1, // 1MB
     maxFileSize = 1024 * 1024 * 10,      // 10MB
@@ -26,94 +27,116 @@ import dto.GoodsImg; // GoodsImg DTO 임포트 필요
 public class AddGoodsController extends HttpServlet {
 
    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+      // 관리자 세션 체크 로직은 생략하고 바로 폼으로 포워딩
       request.getRequestDispatcher("/WEB-INF/view/emp/addGoods.jsp").forward(request, response);
    }
 
-   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+   protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException, NumberFormatException {
+      request.setCharacterEncoding("UTF-8");
       
-      // 1. 파라미터 받기 (멀티파트 폼 데이터)
-      String goodsName = request.getParameter("goodsName");
-      String goodsPrice = request.getParameter("goodsPrice");
-      String pointRate = request.getParameter("pointRate");
+      HttpSession session = request.getSession();
+      Emp loginEmp = (Emp)session.getAttribute("loginEmp");
       
-      // 파일업로드는 Part 라이브러리 사용
-      Part part = request.getPart("goodsImg");
-      
-      // 파일 정보 추출
-      String originName = part.getSubmittedFileName();
-      String contentType = part.getContentType();
-      long filesize = part.getSize();
-      
-      // 2. 파일명 생성 (UUID를 사용하여 고유한 이름 생성 + 확장자)
-      String filename = UUID.randomUUID().toString().replace("-", "");
-      // filename = filename + originName의 확장자
-      if (originName != null && originName.lastIndexOf(".") != -1) {
-          filename += originName.substring(originName.lastIndexOf("."));
-      }
-      
-      System.out.println("originName: "+originName);
-      System.out.println("filename: "+filename);
-      System.out.println("contentType: "+contentType);
-      System.out.println("filesize: "+filesize);
-      
-      // 3. 이미지 타입 유효성 검사
-      if(!(contentType.equals("image/png") || contentType.equals("image/jpeg") || contentType.equals("image/gif"))) {
-         System.out.println("png, jpg, gif 파일만 허용");
-         // 에러 메시지 처리가 필요하지만, 일단 리다이렉트
-         response.sendRedirect(request.getContextPath() + "/emp/addGoods");
-         return;
-      }
-      
-      // 4. 상품 정보 및 이미지 정보 DTO 설정 (DB 로직은 생략된 상태)
-      Emp loginEmp = (Emp)(request.getSession().getAttribute("loginEmp"));
-      
+      // 관리자 세션 체크
       if (loginEmp == null) {
-          response.sendRedirect(request.getContextPath() + "/out/login?msg=" + java.net.URLEncoder.encode("직원 로그인 후 이용 가능합니다.", "UTF-8"));
+          response.sendRedirect(request.getContextPath() + "/out/login");
           return;
       }
       
-      Goods goods = new Goods();
-      goods.setGoodsName(goodsName);
-      goods.setGoodsPrice(Integer.parseInt(goodsPrice));
-      goods.setPointRate(Double.parseDouble(pointRate));
-      goods.setEmpCode(loginEmp.getEmpCode());
-      int goodsCode = 0; // insertGoods() 호출 후 반환받아야 함 (현재는 0으로 임시 설정)
-      
-      GoodsImg goodsImg = new GoodsImg();
-      goodsImg.setGoodsCode(goodsCode);
-      goodsImg.setFileName(filename);
-      goodsImg.setOriginName(originName);
-      goodsImg.setContentType(contentType); // Content Type 추가
-      goodsImg.setFilesize(filesize);
-      
-      // 5. 이미지 파일을 서버의 실제 경로에 저장
-      String realPath = request.getServletContext().getRealPath("upload");
-      File saveFile = new File(realPath, filename); // realPath에 filename으로 저장할 파일 객체 생성
-      
-      // 디렉토리가 없으면 생성 (안전한 파일 저장)
-      if (!saveFile.getParentFile().exists()) {
-          saveFile.getParentFile().mkdirs();
+      // 파일 저장 경로 설정 (웹 애플리케이션의 실제 경로)
+      String path = request.getServletContext().getRealPath("/upload"); 
+      File dir = new File(path);
+      if (!dir.exists()) {
+          dir.mkdirs(); // 디렉토리가 없으면 생성
       }
+      
+      File saveFile = null; // 물리적으로 저장된 파일 객체
+      boolean fileSaved = false; // 파일 저장 성공 여부 플래그
       
       try {
-          part.write(saveFile.getAbsolutePath()); // 파일 저장 실행
-      } catch (IOException e) {
-          System.err.println("파일 저장 실패: " + e.getMessage());
-          // 파일 저장 실패 시 예외 처리 로직 (DB 트랜잭션 롤백 등 필요)
-          response.sendRedirect(request.getContextPath() + "/emp/addGoods?msg=" + java.net.URLEncoder.encode("파일 저장에 실패했습니다.", "UTF-8"));
-          return;
+          // 1. 요청 파라미터 및 파일 파트 받기
+          String goodsName = request.getParameter("goodsName");
+          String goodsPriceStr = request.getParameter("goodsPrice");
+          String pointRateStr = request.getParameter("pointRate");
+          Part filePart = request.getPart("goodsImg"); 
+          
+          // 2. 유효성 검사
+          if (goodsName == null || goodsName.trim().isEmpty() || 
+              goodsPriceStr == null || goodsPriceStr.trim().isEmpty() ||
+              pointRateStr == null || pointRateStr.trim().isEmpty()) {
+              throw new IllegalArgumentException("필수 입력값을 모두 입력해야 합니다.");
+          }
+          
+          int goodsPrice = 0;
+          double pointRate = 0.0;
+          try {
+              goodsPrice = Integer.parseInt(goodsPriceStr);
+              pointRate = Double.parseDouble(pointRateStr);
+          } catch (NumberFormatException e) {
+              throw new IllegalArgumentException("가격 또는 포인트율이 올바른 숫자가 아닙니다.");
+          }
+          
+          if (goodsPrice <= 0 || pointRate < 0) {
+              throw new IllegalArgumentException("가격은 0보다 커야 하고, 포인트율은 0보다 크거나 같아야 합니다.");
+          }
+          
+          // 3. 파일 처리 (물리적 저장)
+          String originName = filePart.getSubmittedFileName();
+          long fileSize = filePart.getSize();
+          String contentType = filePart.getContentType();
+          
+          if (originName == null || originName.isEmpty() || fileSize == 0) {
+              throw new IllegalArgumentException("상품 이미지를 등록해야 합니다.");
+          }
+          
+          // 저장할 파일명 생성 (UUID 사용)
+          String filename = UUID.randomUUID().toString().replace("-", "") + originName.substring(originName.lastIndexOf(".")); 
+          saveFile = new File(path, filename);
+          filePart.write(saveFile.getAbsolutePath()); 
+          fileSaved = true; // 파일 저장 성공 플래그 설정
+          
+          // 4. DTO 생성 및 DAO 호출
+          Goods goods = new Goods();
+          goods.setGoodsName(goodsName);
+          goods.setGoodsPrice(goodsPrice);
+          goods.setPointRate(pointRate);
+          goods.setEmpCode(loginEmp.getEmpCode()); 
+          
+          GoodsImg goodsImg = new GoodsImg();
+          goodsImg.setFileName(filename);
+          goodsImg.setOriginName(originName);
+          goodsImg.setContentType(contentType);
+          goodsImg.setFilesize(fileSize);
+          
+          // 상품(Goods) 및 이미지(GoodsImg) 정보 저장
+          GoodsDao goodsDao = new GoodsDao();
+          boolean success = goodsDao.insertGoodsAndImg(goods, goodsImg); 
+          
+          // 5. 결과 처리
+          if (success) {
+              // 성공 시 goodsList로 리다이렉트
+              response.sendRedirect(request.getContextPath() + "/emp/goodsList");
+          } else {
+               // DB 트랜잭션 실패 시 물리적 파일 삭제 (롤백)
+              if(fileSaved && saveFile != null && saveFile.exists()) saveFile.delete(); 
+              throw new RuntimeException("상품 등록 트랜잭션이 실패했습니다. (DB 롤백됨)");
+          }
+          
+      } catch (IllegalArgumentException e) {
+          // 사용자 입력 오류 처리
+          request.setAttribute("errorMessage", "입력값 오류: " + e.getMessage());
+          request.getRequestDispatcher("/WEB-INF/view/emp/addGoods.jsp").forward(request, response);
+      } catch (Exception e) {
+          // 서버 측 오류 (DB, 파일 시스템 등) 처리
+          System.err.println("AddGoodsController 처리 중 예외 발생: " + e.getMessage());
+          e.printStackTrace();
+          
+          // DB 오류로 실패한 경우, 저장된 파일 삭제
+          if(fileSaved && saveFile != null && saveFile.exists()) saveFile.delete(); 
+          
+          String userMessage = e.getMessage().contains("DB 오류") ? "상품 등록 중 서버 오류가 발생했습니다. (DAO SQL 오류)" : "상품 등록 중 알 수 없는 서버 오류가 발생했습니다.";
+          request.setAttribute("errorMessage", userMessage);
+          request.getRequestDispatcher("/WEB-INF/view/emp/addGoods.jsp").forward(request, response);
       }
-      
-      // 6. DB에 상품(Goods) 및 이미지(GoodsImg) 정보 저장 (DAO 로직 생략)
-      // GoodsDao goodsDao = new GoodsDao();
-      // int goodsResult = goodsDao.insertGoods(goods); 
-      // goodsCode = goods.getGoodsCode(); // PK 값 반환 (예상)
-      // goodsImg.setGoodsCode(goodsCode);
-      // int imgResult = goodsDao.insertGoodsImg(goodsImg);
-      
-      System.out.println("상품 등록 완료 (가정): " + goodsName + ", 파일명: " + filename);
-      
-      // 7. 성공 시 리다이렉트
-      response.sendRedirect(request.getContextPath() + "/emp/goodsList?msg=" + java.net.URLEncoder.encode("상품이 성공적으로 등록되었습니다.", "UTF-8"));
    }
 }

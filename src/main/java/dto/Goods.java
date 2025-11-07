@@ -8,6 +8,9 @@ public class Goods {
 	private int empCode;
 	private double pointRate;
 	private String createdate;
+	
+	private String fileName; // 💡 추가: 목록 조회 시 이미지 파일명을 담기 위한 필드
+
 	public int getGoodsCode() {
 		return goodsCode;
 	}
@@ -50,12 +53,16 @@ public class Goods {
 	public void setCreatedate(String createdate) {
 		this.createdate = createdate;
 	}
+	public String getFileName() {
+		return fileName;
+	}
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
 	@Override
 	public String toString() {
 		return "Goods [goodsCode=" + goodsCode + ", goodsName=" + goodsName + ", goodsPrice=" + goodsPrice
 				+ ", soldout=" + soldout + ", empCode=" + empCode + ", pointRate=" + pointRate + ", createdate="
-				+ createdate + "]";
+				+ createdate + ", fileName=" + fileName + "]";
 	}
-	
-	
 }
