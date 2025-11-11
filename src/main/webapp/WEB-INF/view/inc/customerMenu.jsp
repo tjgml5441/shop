@@ -2,7 +2,7 @@
 
 <style>
     /* 메뉴 박스 스타일: 중앙 정렬, 배경색 투명, 아래쪽 경계선만 표시 */
-    .emp-menu-container {
+    .customer-menu-container {
         display: flex;
         justify-content: center; /* 메뉴 항목 중앙 정렬 */
         padding: 10px 0; /* 상하 패딩 유지, 좌우 패딩 제거 */
@@ -22,7 +22,7 @@
         max-width: none; 
         margin: 10px 0; 
     }
-    .emp-menu-container a {
+    .customer-menu-container a {
         color: #4a4a4a; /* 링크 색상 */
         text-decoration: none;
         padding: 5px 15px;
@@ -35,13 +35,15 @@
         border-radius: 0;
         background-color: transparent; 
     }
-    .emp-menu-container a:hover {
+    .customer-menu-container a:hover {
         color: #000; /* 호버 시 텍스트 색상만 변경 */
         background-color: transparent; /* 호버 시 배경색도 투명으로 유지 */
     }
 </style>
 
-<div class="emp-menu-container">
-	<!-- 메인 메뉴 -->
+<div class="customer-menu-container">
+	<a href="${pageContext.request.contextPath}/customer/customerIndex">상품목록</a>
+	<a href="${pageContext.request.contextPath}/customer/customerInfo">개인정보</a>
 	<a href="${pageContext.request.contextPath}/customer/addressList">배송지관리</a>
+	<a href="${pageContext.request.contextPath}/customer/cartList">장바구니</a>
 </div>

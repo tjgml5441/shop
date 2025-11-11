@@ -1,12 +1,7 @@
 package dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-
+import java.sql.*;
+import java.util.*;
 import dto.Goods;
 import dto.GoodsImg;
 
@@ -14,6 +9,118 @@ import dto.GoodsImg;
 // DBConnection.getConn()이 Connection 객체를 반환한다고 가정합니다.
 
 public class GoodsDao {
+	// /customer/goodsOne
+		public Map<String, Object> selectGoodsOne(int goodsCode) {
+			Map<String, Object> map = new HashMap<String, Object>();
+			Connection conn = null;
+			PreparedStatement stmt = null;
+			ResultSet rs = null;
+			String sql = """
+				select 
+						gi.filename filename
+						, g.goods_code goodsCode
+						, g.goods_name goodsName
+						, g.goods_price goodsPrice
+						, nvl(g.soldout,' ') soldout
+						, g.point_rate pointRate
+				from goods g inner join goods_img gi
+				on g.goods_code = gi.goods_code
+				where g.goods_code = ?
+			""";
+			try {
+				conn = DBConnection.getConn();
+				stmt = conn.prepareStatement(sql);
+				stmt.setInt(1, goodsCode);
+				rs = stmt.executeQuery();
+				while(rs.next()) {
+					map.put("filename", rs.getString("filename"));
+					map.put("goodsCode",  rs.getString("goodsCode"));
+					map.put("goodsName",  rs.getString("goodsName"));
+					map.put("goodsPrice",  rs.getInt("goodsPrice"));
+					map.put("soldout",  rs.getString("soldout"));
+					map.put("pointRate",  rs.getDouble("pointRate"));
+				}
+			} catch(Exception e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					if(rs != null) rs.close();
+					if(stmt != null) stmt.close();
+					if(conn != null) conn.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			return map;		
+		}
+	
+	
+	public List<Map<String, Object>> selectBestGoodsList() {
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+		String sql = """
+			select 
+			        gi.filename filename
+			        , g.goods_code goodsCode
+			        , g.goods_name goodsName
+			        , g.goods_price goodsPrice
+			from
+			goods g inner join goods_img gi
+			on g.goods_code = gi.goods_code
+			    inner join(select goods_code, count(*) from orders
+			                        group by goods_code
+			                        order by count(*) desc
+			                        offset 0 rows fetch next 5 rows only) t
+			    on g.goods_code = t.goods_code	
+		""";
+		return list;
+	}
+	
+	// rowPerPage : /emp/goodsList(10개), /customer/customerIndex(20개)
+	public List<Map<String, Object>> selectGoodsList(int beginRow, int rowPerPage) {
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		ResultSet rs = null;
+		String sql = """
+			select 
+					gi.filename filename
+					, g.goods_code goodsCode
+					, g.goods_name goodsName
+					, g.goods_price goodsPrice
+			from goods g inner join goods_img gi
+			on g.goods_code = gi.goods_code
+			where g.soldout is null
+			order by g.goods_code desc
+			offset ? rows fetch next ? rows only
+		""";
+		try {
+			conn = DBConnection.getConn();
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, beginRow);
+			stmt.setInt(2, rowPerPage);
+			rs = stmt.executeQuery();
+			while(rs.next()) {
+				Map<String, Object> m = new HashMap<String, Object>();
+				m.put("filename", rs.getString("filename"));
+				m.put("goodsCode",  rs.getString("goodsCode"));
+				m.put("goodsName",  rs.getString("goodsName"));
+				m.put("goodsPrice",  rs.getInt("goodsPrice"));
+				list.add(m);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				if(rs != null) rs.close();
+				if(stmt != null) stmt.close();
+				if(conn != null) conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		return list;
+	}
+	
 	
 	/**
 	 * 상품등록 + 이미지 등록 (트랜잭션)
