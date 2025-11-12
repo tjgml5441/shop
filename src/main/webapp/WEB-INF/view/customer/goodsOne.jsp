@@ -178,7 +178,7 @@
 					<tr>
 						<th>수량</th>
 						<td>
-							<select>
+							<select name="cartQuantity">
 								<c:forEach var="n" begin="1" end="10">
 									<option value="${n}">${n}</option>
 								</c:forEach>
@@ -189,5 +189,20 @@
 				<button type="button" class="btn-style btn-cart">장바구니</button><button type="button" class="btn-style btn-order">바로주문</button></form>
 		</div>
 	</div>
+	<script>
+		$('#cartBtn').click(function(){
+			$('#myForm').attr('method', 'post');
+			$('#myForm').attr('action', $('#contextPath').val()+'/customer/addCart');
+			alert('cartBtn:' + $('#myForm').attr('method') + ',' + $('#myForm').attr('action')); // cart 액션
+			$('#myForm').submit();
+		});
+		
+		$('#orderBtn').click(function(){
+			$('#myForm').attr('method', 'get');
+			$('#myForm').attr('action', $('#contextPath').val()+'/customer/addOrders');
+			alert('orderBtn: ' + $('#myForm').attr('method') + ',' + $('#myForm').attr('action')); // orders 화면
+			$('#myForm').submit();
+		});
+	</script>
 </body>
 </html>
