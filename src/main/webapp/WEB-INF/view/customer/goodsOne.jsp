@@ -186,7 +186,9 @@
 						</td>
 					</tr>
 				</table>
-				<button type="button" class="btn-style btn-cart">장바구니</button><button type="button" class="btn-style btn-order">바로주문</button></form>
+				<button type="button" class="btn-style btn-cart">장바구니</button>
+				<button type="button" class="btn-style btn-order">바로주문</button>
+			</form>
 		</div>
 	</div>
 	<script>

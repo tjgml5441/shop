@@ -10,6 +10,8 @@ import java.util.List;
 import dto.Address;
 
 public class AddressDao {
+	
+	
 	/**
 	 * 배송지 추가 (5개 제한 트랜잭션 포함)
 	 * @param address
@@ -88,36 +90,25 @@ public class AddressDao {
 		Connection conn = null;
 		PreparedStatement stmt = null;
 		ResultSet rs = null;
-		
 		String sql = """
-				SELECT address_code, customer_code, address, createdate
-				FROM address 
-				WHERE customer_code = ?
-				ORDER BY createdate DESC
-				"""; 
-		
+					select address_code addressCode, address 
+					from address where customer_code = ?
+				""";
 		try {
-			conn = DBConnection.getConn(); // DBConnection은 존재하는 것으로 가정
+			conn = DBConnection.getConn();
 			stmt = conn.prepareStatement(sql);
 			stmt.setInt(1, customerCode);
 			rs = stmt.executeQuery();
-			
 			while(rs.next()) {
-				Address address = new Address();
-				address.setAddressCode(rs.getInt("address_code"));
-				address.setCustomerCode(rs.getInt("customer_code"));
-				address.setAddress(rs.getString("address"));
-				address.setCreatedate(rs.getString("createdate"));
-				list.add(address);
+				Address a = new Address();
+				a.setAddressCode(rs.getInt("addressCode"));
+				a.setAddress(rs.getString("address"));
+				list.add(a);
 			}
+		} catch(Exception e) {
+			e.printStackTrace();
 		} finally {
-			try {
-				if(rs != null) rs.close();
-				if(stmt != null) stmt.close();
-				if(conn != null) conn.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			
 		}
 		return list;
 	}

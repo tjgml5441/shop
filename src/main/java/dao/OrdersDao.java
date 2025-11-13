@@ -8,8 +8,44 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dto.Orders;
+
 // DBConnection.getConn()이 Connection 객체를 반환한다고 가정
 public class OrdersDao {
+	
+	public int insertOrders(Orders o) {
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		String sql = """
+				insert into orders(
+					order_code, goods_code, customer_code, address_code, order_quantity
+					, order_price, order_state, createdate
+				) values (
+					seq_order.nextval, ?, ?, ?, ?, ?, '주문완료', sysdate
+				)
+				""";
+		int row = 0;
+		try {
+			conn = DBConnection.getConn();
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, o.getGoodsCode());
+			stmt.setInt(2, o.getCustomerCode());
+			stmt.setInt(3, o.getAddressCode());
+			stmt.setInt(4, o.getOrderQuantity());
+			stmt.setInt(5, o.getOrderPrice());
+			row = stmt.executeUpdate();
+		} catch(Exception e) {
+			e.printStackTrace();
+		} finally {
+			
+		}
+ 		return row;
+	}
+	
+	// goodsOne -> 주문완료
+	
+	// cartList -> 주문완료
+	
 	
 	// 전체 주문 건수 조회 (페이지네이션을 위해 추가)
 	public int selectCount() throws Exception {
